@@ -200,6 +200,7 @@ func initXdsProxy(ia *Agent) (*XdsProxy, error) {
 
 	go proxy.healthChecker.PerformApplicationHealthCheck(func(healthEvent *health.ProbeEvent) {
 		// Store the same response as Delta and SotW. Depending on how Envoy connects we will use one or the other.
+		//构造request，构造全量的
 		req := &discovery.DiscoveryRequest{TypeUrl: v3.HealthInfoType}
 		if !healthEvent.Healthy {
 			req.ErrorDetail = &google_rpc.Status{
@@ -207,6 +208,7 @@ func initXdsProxy(ia *Agent) (*XdsProxy, error) {
 				Message: healthEvent.UnhealthyMessage,
 			}
 		}
+		// 增量
 		proxy.sendHealthCheckRequest(req)
 		deltaReq := &discovery.DeltaDiscoveryRequest{TypeUrl: v3.HealthInfoType}
 		if !healthEvent.Healthy {

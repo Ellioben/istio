@@ -168,7 +168,7 @@ func (w *WorkloadHealthChecker) PerformApplicationHealthCheck(callback func(*Pro
 			if numFail == w.config.FailThresh && lastState != lastStateUnhealthy {
 				healthCheckLog.Infof("failure threshold hit, marking as unhealthy: %v", err)
 				numFail = 0
-				//外部回调
+				// 外部回调
 				callback(&ProbeEvent{
 					Healthy:          false,
 					UnhealthyStatus:  http.StatusInternalServerError,
@@ -181,7 +181,7 @@ func (w *WorkloadHealthChecker) PerformApplicationHealthCheck(callback func(*Pro
 
 	// Send the first request immediately
 	doCheck()
-	// 周期性的checck
+	// 周期性的checck，周期性的回调
 	periodTicker := time.NewTicker(w.config.CheckFrequency)
 	defer periodTicker.Stop()
 	for {
