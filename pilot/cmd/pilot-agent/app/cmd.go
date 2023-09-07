@@ -83,6 +83,7 @@ func NewRootCommand() *cobra.Command {
 	rootCmd.AddCommand(requestCmd)
 	rootCmd.AddCommand(waitCmd)
 	rootCmd.AddCommand(version.CobraCommand())
+	// 設置iptables的執行文件
 	rootCmd.AddCommand(iptables.GetCommand())
 	rootCmd.AddCommand(cleaniptables.GetCommand())
 
@@ -104,6 +105,7 @@ func newProxyCommand() *cobra.Command {
 			UnknownFlags: true,
 		},
 		PersistentPreRunE: configureLogging,
+		//
 		RunE: func(c *cobra.Command, args []string) error {
 			cmd.PrintFlags(c.Flags())
 			log.Infof("Version %s", version.Info.String())
@@ -174,6 +176,7 @@ func newProxyCommand() *cobra.Command {
 			go cmd.WaitSignalFunc(cancel)
 
 			// Start in process SDS, dns server, xds proxy, and Envoy.
+			// 启动istio代理sds
 			wait, err := agent.Run(ctx)
 			if err != nil {
 				return err

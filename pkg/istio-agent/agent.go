@@ -351,11 +351,16 @@ func (a *Agent) Run(ctx context.Context) (func(), error) {
 			return nil, errors.New("workload SDS socket is required but not found")
 		}
 		log.Info("Workload SDS socket not found. Starting Istio SDS Server")
+		// 初始化并启动sds服务
 		err = a.initSdsServer()
 		if err != nil {
 			return nil, fmt.Errorf("failed to start SDS server: %v", err)
 		}
 	}
+	// 启动xds代理
+	// XDS代理是用于管理Envoy代理与Istio控制平面之间的通信的组件。initXdsProxy(a)函数会创建一个新的XDS代理实例，
+	// pilot-agent 启动grpc-server下对envoy，同时还要作为grpc-agent 请求istiod 获取数据
+
 	a.xdsProxy, err = initXdsProxy(a)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start xds proxy: %v", err)

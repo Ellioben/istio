@@ -183,6 +183,7 @@ func initXdsProxy(ia *Agent) (*XdsProxy, error) {
 
 	proxyLog.Infof("Initializing with upstream address %q and cluster %q", proxy.istiodAddress, proxy.clusterID)
 
+	///提供增量服务
 	if err = proxy.initDownstreamServer(); err != nil {
 		return nil, err
 	}
@@ -633,6 +634,7 @@ func (p *XdsProxy) initDownstreamServer() error {
 	opts := p.downstreamGrpcOptions
 	opts = append(opts, istiogrpc.ServerOptions(istiokeepalive.DefaultOption())...)
 	grpcs := grpc.NewServer(opts...)
+	// RegisterAggregatedDiscoveryServiceServer代表提供 ads聚合增量服务
 	discovery.RegisterAggregatedDiscoveryServiceServer(grpcs, p)
 	reflection.Register(grpcs)
 	p.downstreamGrpcServer = grpcs

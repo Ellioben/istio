@@ -100,6 +100,7 @@ type exitStatus struct {
 // Run starts the envoy and waits until it terminates.
 func (a *Agent) Run(ctx context.Context) {
 	log.Info("Starting proxy agent")
+	// >>
 	go a.runWait(a.abortCh)
 
 	select {
@@ -213,6 +214,7 @@ func (a *Agent) activeProxyConnections() (int, error) {
 // runWait runs the start-up command as a go routine and waits for it to finish
 func (a *Agent) runWait(abortCh <-chan error) {
 	log.Infof("starting")
+	// run
 	err := a.proxy.Run(abortCh)
 	a.proxy.Cleanup()
 	a.statusCh <- exitStatus{err: err}
