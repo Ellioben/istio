@@ -250,10 +250,8 @@ func (p *XdsProxy) handleUpstreamDeltaResponse(con *ProxyConnection) {
 				}
 				// Send ACK/NACK
 				// 这段代码是在发送一个 DeltaDiscoveryRequest 给上游服务（例如 Istiod）。这个请求是一个 ACK（确认）或者 NACK（否认）消息，用于响应上游服务之前发送的 DeltaDiscoveryResponse。
-
-				//在这个上下文中，TypeUrl 是请求的类型，resp.TypeUrl 是从上游服务接收到的响应的类型。这个请求的发送表示 Istio 代理已经处理了上游服务的响应，并且正在向上游服务发送一个 ACK 或者 NACK 来确认这个事实。
-
-				//如果处理上游服务的响应时发生错误，那么会发送一个 NACK，否则会发送一个 ACK。这是一个常见的模式，用于确保两端的服务都知道对方的状态，并且可以正确地处理任何可能出现的错误。
+				// 在这个上下文中，TypeUrl 是请求的类型，resp.TypeUrl 是从上游服务接收到的响应的类型。这个请求的发送表示 Istio 代理已经处理了上游服务的响应，并且正在向上游服务发送一个 ACK 或者 NACK 来确认这个事实。
+				// 如果处理上游服务的响应时发生错误，那么会发送一个 NACK，否则会发送一个 ACK。这是一个常见的模式，用于确保两端的服务都知道对方的状态，并且可以正确地处理任何可能出现的错误。
 				con.sendDeltaRequest(&discovery.DeltaDiscoveryRequest{
 					TypeUrl:       resp.TypeUrl,
 					ResponseNonce: resp.Nonce,

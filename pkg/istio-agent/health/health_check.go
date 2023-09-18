@@ -126,6 +126,7 @@ func orDefault(val int32, def int32) int32 {
 // PerformApplicationHealthCheck Performs the application-provided configuration health check.
 // Instead of a heartbeat-based health checks, we only send on a health state change, and this is
 // determined by the success & failure threshold provided by the user.
+// 周期性的docheck（探活和回调）
 func (w *WorkloadHealthChecker) PerformApplicationHealthCheck(callback func(*ProbeEvent), quit chan struct{}) {
 	if w == nil {
 		return

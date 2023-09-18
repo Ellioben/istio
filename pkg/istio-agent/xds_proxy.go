@@ -183,7 +183,7 @@ func initXdsProxy(ia *Agent) (*XdsProxy, error) {
 
 	proxyLog.Infof("Initializing with upstream address %q and cluster %q", proxy.istiodAddress, proxy.clusterID)
 
-	///提供增量服务
+	///提供增量服务，注册了grpc的server，自己pilot-agent作为service，给envoy提供服务
 	if err = proxy.initDownstreamServer(); err != nil {
 		return nil, err
 	}
@@ -200,15 +200,16 @@ func initXdsProxy(ia *Agent) (*XdsProxy, error) {
 
 	go proxy.healthChecker.PerformApplicationHealthCheck(func(healthEvent *health.ProbeEvent) {
 		// Store the same response as Delta and SotW. Depending on how Envoy connects we will use one or the other.
-		//构造request，构造全量的
+		//构造request，构造全量的req
 		req := &discovery.DiscoveryRequest{TypeUrl: v3.HealthInfoType}
+		// 根据PerformApplicationHealthCheck里面的探活结果赋值
 		if !healthEvent.Healthy {
 			req.ErrorDetail = &google_rpc.Status{
 				Code:    int32(codes.Internal),
 				Message: healthEvent.UnhealthyMessage,
 			}
 		}
-		// 增量
+		// 全量req发送给istiod服务
 		proxy.sendHealthCheckRequest(req)
 		deltaReq := &discovery.DeltaDiscoveryRequest{TypeUrl: v3.HealthInfoType}
 		if !healthEvent.Healthy {
@@ -217,6 +218,7 @@ func initXdsProxy(ia *Agent) (*XdsProxy, error) {
 				Message: healthEvent.UnhealthyMessage,
 			}
 		}
+		// 增量
 		proxy.sendDeltaHealthRequest(deltaReq)
 	}, proxy.stopChan)
 
@@ -226,6 +228,7 @@ func initXdsProxy(ia *Agent) (*XdsProxy, error) {
 // sendHealthCheckRequest sends a request to the currently connected proxy. Additionally, on any reconnection
 // to the upstream XDS request we will resend this request.
 func (p *XdsProxy) sendHealthCheckRequest(req *discovery.DiscoveryRequest) {
+	// 保证访问istiod是线程安全的
 	p.connectedMutex.Lock()
 	// Immediately send if we are currently connected.
 	if p.connected != nil && p.connected.requestsChan != nil {
@@ -394,8 +397,10 @@ func (p *XdsProxy) handleUpstream(ctx context.Context, con *ProxyConnection, xds
 			}
 		}
 	}()
-
+	// handleUpstreamRequest和handleUpstreamResponse函数是在两个独立的goroutine中运行的，分别处理来自Envoy的请求和来自Istiod的响应
+	// - handleUpstreamRequest函数从Envoy接收XDS请求，并将请求转发到Istiod。
 	go p.handleUpstreamRequest(con)
+	// - handleUpstreamResponse函数处理来自Istiod的XDS响应，并将响应转发到Envoy。
 	go p.handleUpstreamResponse(con)
 
 	for {
@@ -487,6 +492,7 @@ func (p *XdsProxy) handleUpstreamRequest(con *ProxyConnection) {
 				}
 				p.ecdsLastNonce.Store(req.ResponseNonce)
 			}
+			// 发送请求到istiod服务
 			if err := sendUpstream(con.upstream, req); err != nil {
 				err = fmt.Errorf("upstream [%d] send error for type url %s: %v", con.conID, req.TypeUrl, err)
 				con.upstreamError <- err
@@ -521,6 +527,9 @@ func (p *XdsProxy) handleUpstreamResponse(con *ProxyConnection) {
 					}
 				}
 				// Send ACK/NACK
+				// DiscoveryRequest的作用是向Istiod发送一个ACK（确认）或者NACK（否认）。
+				// 如果处理Istiod的响应时没有发生错误，那么就会发送一个ACK，告诉Istiod代理已经成功处理了这个版本的配置。
+				// 如果处理过程中发生了错误，那么就会发送一个NACK，告诉Istiod代理在处理这个版本的配置时发生了错误
 				con.sendRequest(&discovery.DiscoveryRequest{
 					VersionInfo:   resp.VersionInfo,
 					TypeUrl:       resp.TypeUrl,
@@ -543,6 +552,7 @@ func (p *XdsProxy) handleUpstreamResponse(con *ProxyConnection) {
 					})
 				} else {
 					// Otherwise, forward ECDS resource update directly to Envoy.
+					// 也是发送给istiod，间接处理envoy
 					forwardToEnvoy(con, resp)
 				}
 			default:
@@ -553,6 +563,7 @@ func (p *XdsProxy) handleUpstreamResponse(con *ProxyConnection) {
 				}
 			}
 		case resp := <-forwardEnvoyCh:
+			// 发送给istiod，处理envoy
 			forwardToEnvoy(con, resp)
 		case <-con.stopChan:
 			return

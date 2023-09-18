@@ -79,11 +79,12 @@ func NewRootCommand() *cobra.Command {
 
 	proxyCmd := newProxyCommand()
 	addFlags(proxyCmd)
+	// *
 	rootCmd.AddCommand(proxyCmd)
 	rootCmd.AddCommand(requestCmd)
 	rootCmd.AddCommand(waitCmd)
 	rootCmd.AddCommand(version.CobraCommand())
-	// 設置iptables的執行文件
+	// 設置iptables的執行文件（init）
 	rootCmd.AddCommand(iptables.GetCommand())
 	rootCmd.AddCommand(cleaniptables.GetCommand())
 
@@ -177,6 +178,8 @@ func newProxyCommand() *cobra.Command {
 
 			// Start in process SDS, dns server, xds proxy, and Envoy.
 			// 启动istio代理sds
+			// 启动 Istio 代理的主要方法。它在 Istio 代理中启动了一系列的服务，包括 Envoy 代理、XDS 代理、内部 SDS 服务、DNS 服务等。
+			// &&并管理其生命周期。在 Istio 代理启动后，它会持续运行并处理来自服务网格中其他服务的请求，直到收到停止信号或者发生严重错误
 			wait, err := agent.Run(ctx)
 			if err != nil {
 				return err
