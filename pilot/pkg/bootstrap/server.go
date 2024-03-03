@@ -284,7 +284,7 @@ func NewServer(args *PilotArgs, initFuncs ...func(*Server)) (*Server, error) {
 	if err := s.maybeCreateCA(caOpts); err != nil {
 		return nil, err
 	}
-
+	// 初始化controller
 	if err := s.initControllers(args); err != nil {
 		return nil, err
 	}
@@ -331,6 +331,7 @@ func NewServer(args *PilotArgs, initFuncs ...func(*Server)) (*Server, error) {
 	// This should be called only after controllers are initialized.
 	s.initRegistryEventHandlers()
 
+	// 启动grpcserver
 	s.initDiscoveryService()
 
 	// Notice that the order of authenticators matters, since at runtime
@@ -1096,17 +1097,20 @@ func (s *Server) getIstiodCertificate(*tls.ClientHelloInfo) (*tls.Certificate, e
 // initControllers initializes the controllers.
 func (s *Server) initControllers(args *PilotArgs) error {
 	log.Info("initializing controllers")
+	// 多集群
 	s.initMulticluster(args)
-
+	// 证书
 	s.initSDSServer()
 
 	if features.EnableEnhancedResourceScoping {
 		// setup namespace filter
 		args.RegistryOptions.KubeOptions.DiscoveryNamespacesFilter = s.multiclusterController.DiscoveryNamespacesFilter
 	}
+	// crd
 	if err := s.initConfigController(args); err != nil {
 		return fmt.Errorf("error initializing config controller: %v", err)
 	}
+	// svc
 	if err := s.initServiceControllers(args); err != nil {
 		return fmt.Errorf("error initializing service controllers: %v", err)
 	}

@@ -414,6 +414,7 @@ func bindFlags(cmd *cobra.Command, args []string) {
 // Only adding flags in `init()` while moving its binding to Viper and value defaulting as part of the command execution.
 // Otherwise, the flag with the same name shared across subcommands will be overwritten by the last.
 func init() {
+	// 拼接子命令，可以在oyaml上看到
 	bindCmdlineFlags(rootCmd)
 	bindCmdlineFlags(configureRoutesCommand)
 }

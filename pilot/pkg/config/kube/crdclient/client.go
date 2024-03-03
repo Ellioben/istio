@@ -95,6 +95,7 @@ type Option struct {
 var _ model.ConfigStoreController = &Client{}
 
 func New(client kube.Client, opts Option) *Client {
+	// crd schema
 	schemas := collections.Pilot
 	if features.EnableGatewayAPI {
 		schemas = collections.PilotGatewayAPI()

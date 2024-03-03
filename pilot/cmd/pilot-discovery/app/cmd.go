@@ -55,6 +55,7 @@ func NewRootCommand() *cobra.Command {
 		},
 	}
 
+	// 'discovery'
 	discoveryCmd := newDiscoveryCommand()
 	addFlags(discoveryCmd)
 	rootCmd.AddCommand(discoveryCmd)
